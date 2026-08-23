@@ -1,0 +1,162 @@
+import React, { useState, useEffect } from 'react';
+import {
+  PageRoute,
+  ServiceItem,
+  FounderData,
+  ProjectRequest,
+  EventRegistration,
+  SiteSettings,
+  DigitalProduct,
+  ProductOrder,
+  ProductPaymentSettings
+} from './types';
+import {
+  INITIAL_FOUNDER_DATA,
+  INITIAL_SERVICES,
+  INITIAL_SITE_SETTINGS,
+  INITIAL_DIGITAL_PRODUCTS,
+  INITIAL_PRODUCT_PAYMENT_SETTINGS
+} from './data/initialData';
+
+import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
+import { HeroCleanSplit } from './components/home/HeroCleanSplit';
+import { HomeCleanHighlights } from './components/home/HomeCleanHighlights';
+import { ServicesSection } from './components/services/ServicesSection';
+import { AISikhSakteHoSection } from './components/home/AISikhSakteHoSection';
+import { AIConfigurator } from './components/home/AIConfigurator';
+import { ProductsSection } from './components/products/ProductsSection';
+import { EventsSection } from './components/events/EventsSection';
+import { AboutSection } from './components/about/AboutSection';
+import { FounderSection } from './components/about/FounderSection';
+import { ProjectsSection } from './components/projects/ProjectsSection';
+import { ContactSection } from './components/contact/ContactSection';
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import { FloatingAIChat } from './components/chat/FloatingAIChat';
+import { ProjectRequestModal } from './components/services/ProjectRequestModal';
+import { CmsEditModal } from './components/admin/CmsEditModal';
+import { NotificationProvider } from './context/NotificationContext';
+import { AuthProvider } from './context/AuthContext';
+
+export function App() {
+  const [currentRoute, setCurrentRoute] = useState<PageRoute>('home');
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
+    const saved = localStorage.getItem('nexora_site_settings');
+    return saved ? JSON.parse(saved) : INITIAL_SITE_SETTINGS;
+  });
+
+  const [founderData, setFounderData] = useState<FounderData>(() => {
+    const saved = localStorage.getItem('nexora_founder_data');
+    return saved ? JSON.parse(saved) : INITIAL_FOUNDER_DATA;
+  });
+
+  const [services, setServices] = useState<ServiceItem[]>(() => {
+    const saved = localStorage.getItem('nexora_services_data');
+    return saved ? JSON.parse(saved) : INITIAL_SERVICES;
+  });
+
+  const [digitalProducts, setDigitalProducts] = useState<DigitalProduct[]>(() => {
+    const saved = localStorage.getItem('nexora_digital_products');
+    return saved ? JSON.parse(saved) : INITIAL_DIGITAL_PRODUCTS;
+  });
+
+  const [productPaymentSettings, setProductPaymentSettings] = useState<ProductPaymentSettings>(() => {
+    const saved = localStorage.getItem('nexora_product_payment_settings');
+    return saved ? JSON.parse(saved) : INITIAL_PRODUCT_PAYMENT_SETTINGS;
+  });
+
+  const [productOrders, setProductOrders] = useState<ProductOrder[]>(() => {
+    const saved = localStorage.getItem('nexora_product_orders');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [selectedServiceForQuote, setSelectedServiceForQuote] = useState<string>('');
+
+  const navigateTo = (route: PageRoute) => {
+    setCurrentRoute(route);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenProjectModal = (serviceTitle?: string) => {
+    setSelectedServiceForQuote(serviceTitle || '');
+    setIsProjectModalOpen(true);
+  };
+
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <div className="min-h-screen bg-[#05060b] text-zinc-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+          <Navbar currentRoute={currentRoute} onNavigate={navigateTo} />
+
+          <main className="flex-1">
+            {currentRoute === 'home' && (
+              <>
+                <HeroCleanSplit
+                  founder={founderData}
+                  siteSettings={siteSettings}
+                  onNavigate={navigateTo}
+                  onOpenProjectModal={() => handleOpenProjectModal()}
+                />
+                <HomeCleanHighlights
+                  services={services}
+                  onNavigate={navigateTo}
+                  onOpenProjectModal={(service) => handleOpenProjectModal(service)}
+                />
+              </>
+            )}
+
+            {currentRoute === 'services' && (
+              <ServicesSection
+                services={services}
+                onSelectService={(service) => handleOpenProjectModal(service.title)}
+              />
+            )}
+
+            {currentRoute === 'products' && (
+              <ProductsSection
+                products={digitalProducts}
+                onUpdateProducts={setDigitalProducts}
+                paymentSettings={productPaymentSettings}
+                onUpdatePaymentSettings={setProductPaymentSettings}
+                orders={productOrders}
+                onUpdateOrders={setProductOrders}
+                onOpenProjectModal={(type) => handleOpenProjectModal(type)}
+              />
+            )}
+
+            {currentRoute === 'ai-learning' && (
+              <AISikhSakteHoSection
+                onEnroll={(trackTitle) => handleOpenProjectModal(`AI Sikh Sakte Ho: ${trackTitle}`)}
+              />
+            )}
+
+            {currentRoute === 'blueprint' && (
+              <AIConfigurator onOpenProjectModal={(type) => handleOpenProjectModal(type)} />
+            )}
+
+            {currentRoute === 'about' && (
+              <>
+                <AboutSection founder={founderData} />
+                <FounderSection founder={founderData} />
+              </>
+            )}
+
+            {currentRoute === 'projects' && <ProjectsSection />}
+            {currentRoute === 'contact' && <ContactSection />}
+          </main>
+
+          <Footer currentRoute={currentRoute} onNavigate={navigateTo} founder={founderData} />
+
+          <FloatingAIChat />
+
+          <ProjectRequestModal
+            isOpen={isProjectModalOpen}
+            onClose={() => setIsProjectModalOpen(false)}
+            initialService={selectedServiceForQuote}
+          />
+        </div>
+      </NotificationProvider>
+    </AuthProvider>
+  );
+}
